@@ -5,6 +5,15 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from imblearn.under_sampling import NearMiss
 
+from data.config import (
+    TEST_SIZE,
+    RANDOM_STATE,
+    CORRELATION_THRESHOLD,
+    TARGET_COLUMN,
+    MAX_MAJORITY_SAMPLES,
+    MAX_MINORITY_SAMPLES
+)
+
 
 # -------------------- LOAD --------------------
 def load_data(path):
@@ -15,7 +24,7 @@ def load_data(path):
 
 
 # -------------------- CLEAN --------------------
-def clean_data(dataset, target="defects"):
+def clean_data(dataset, target=TARGET_COLUMN):
     dataset = dataset.copy()
     dataset[target] = dataset[target].astype(float)
     dataset.dropna(axis=0, inplace=True)
@@ -27,7 +36,7 @@ def clean_data(dataset, target="defects"):
 
 
 # -------------------- SPLIT --------------------
-def split_data(dataset, target_col="defects", test_size=0.30, random_state=42):
+def split_data(dataset, target_col=TARGET_COLUMN):
 
     X = dataset.drop(columns=[target_col])
     y = dataset[target_col]
@@ -35,8 +44,8 @@ def split_data(dataset, target_col="defects", test_size=0.30, random_state=42):
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
-        test_size=test_size,
-        random_state=random_state,
+        test_size=TEST_SIZE,
+        random_state=RANDOM_STATE,
         stratify=y
     )
 
@@ -51,8 +60,8 @@ def remove_correlated_features(
     X_train,
     X_test,
     y_train,
-    threshold=0.95,
-    target_name="defects"
+    threshold=CORRELATION_THRESHOLD,
+    target_name=TARGET_COLUMN
 ):
 
     X_train = X_train.copy()
@@ -72,7 +81,7 @@ def remove_correlated_features(
 
     print(f"Highly correlated pairs: {len(high_corr_pairs)}")
 
-    # align indices safely
+    # safe alignment
     temp = X_train.copy().reset_index(drop=True)
     y_train = y_train.reset_index(drop=True)
     temp[target_name] = y_train
@@ -104,8 +113,8 @@ def remove_correlated_features(
 def balance_data(
     X_train,
     y_train,
-    max_majority_samples=3000,
-    max_minority_samples=2103
+    max_majority_samples=MAX_MAJORITY_SAMPLES,
+    max_minority_samples=MAX_MINORITY_SAMPLES
 ):
 
     class_counts = y_train.value_counts()
@@ -156,7 +165,10 @@ def scale_data(X_train, X_test):
 
     return X_train_scaled, X_test_scaled, scaler
 
+
+# -------------------- PIPELINE --------------------
 def build_pipeline(path):
+
     data = load_data(path)
     data = clean_data(data)
 
@@ -170,4 +182,12 @@ def build_pipeline(path):
 
     X_train, X_test, scaler = scale_data(X_train, X_test)
 
-    return X_train, X_test, y_train, y_test, scaler, selected_features, dropped
+    return {
+        "X_train": X_train,
+        "X_test": X_test,
+        "y_train": y_train,
+        "y_test": y_test,
+        "scaler": scaler,
+        "selected_features": selected_features,
+        "dropped_features": dropped
+    }
