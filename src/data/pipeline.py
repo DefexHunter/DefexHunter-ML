@@ -1,122 +1,37 @@
 import numpy as np
 import pandas as pd
+
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from imblearn.under_sampling import NearMiss
 
 
-
-
+# -------------------- LOAD --------------------
 def load_data(path):
     dataset = pd.read_csv(path)
     print("Shape:", dataset.shape)
-    print ("----------------Finished loading data----------------")
+    print("----------------Finished loading data----------------")
     return dataset
 
 
-
-def clean_data(dataset):
-    dataset['defects'] = dataset['defects'].astype('float')
+# -------------------- CLEAN --------------------
+def clean_data(dataset, target="defects"):
+    dataset = dataset.copy()
+    dataset[target] = dataset[target].astype(float)
     dataset.dropna(axis=0, inplace=True)
+
     print("Shape after cleaning:", dataset.shape)
-    print ("----------------Finished cleaning data----------------")
+    print("----------------Finished cleaning data----------------")
+
     return dataset
 
 
-def remove_correlated_features(X, y, threshold=0.95, target_name="target"):
-    X = X.copy()
+# -------------------- SPLIT --------------------
+def split_data(dataset, target_col="defects", test_size=0.30, random_state=42):
 
-    # 1. Correlation between features
-    corr = X.corr(numeric_only=True)
+    X = dataset.drop(columns=[target_col])
+    y = dataset[target_col]
 
-    high_corr_pairs = []
-
-    # 2. Find highly correlated feature pairs
-    for i in range(len(corr.columns)):
-        for j in range(i + 1, len(corr.columns)):
-
-            correlation = corr.iloc[i, j]
-
-            if abs(correlation) > threshold:
-                high_corr_pairs.append(
-                    (corr.columns[i], corr.columns[j], correlation)
-                )
-
-    print(f"Highly correlated pairs (|r| > {threshold}): {len(high_corr_pairs)}")
-
-    for a, b, r in sorted(high_corr_pairs, key=lambda x: -abs(x[2])):
-        print(f"{a:22s} <-> {b:22s} r = {r:.3f}")
-
-    # 3. Correlation with target
-    temp = X.copy()
-    temp[target_name] = y
-
-    target_corr = temp.corr(numeric_only=True)[target_name].abs()
-
-    # 4. Decide which features to drop
-    features_to_drop = set()
-
-    for a, b, r in high_corr_pairs:
-
-        # drop the one LESS correlated with target
-        if target_corr[a] >= target_corr[b]:
-            drop = b
-        else:
-            drop = a
-
-        features_to_drop.add(drop)
-
-    # 5. Build selected feature list
-    selected_features = [col for col in X.columns if col not in features_to_drop]
-
-    print(f"\nDropped ({len(features_to_drop)} features):")
-    print(sorted(features_to_drop))
-
-    print(f"\nRemaining features: {len(selected_features)}")
-
-    X_clean = X[selected_features]
-
-    print("----------------Finished removing correlated features----------------")
-
-    return X_clean, y, list(features_to_drop)
-
-
-def balance_data(
-    X,
-    y,
-    max_majority_samples=3000,
-    max_minority_samples=2103
-):
-    class_counts = y.value_counts()
-
-    minority_n = min(int(class_counts.min()), max_minority_samples )
-    majority_n = min(int(class_counts.max()), max_majority_samples )
-
-    print(
-        f"Resampling targets → "
-        f"majority: {majority_n}, "
-        f"minority: {minority_n}"
-    )
-
-    sampler = NearMiss(
-        version=1,
-        sampling_strategy={
-            0: majority_n,
-            1: minority_n
-        }
-    )
-
-    X_balanced, y_balanced = sampler.fit_resample(X, y)
-
-    print("\nClass distribution after NearMiss:")
-    print(pd.Series(y_balanced).value_counts())
-
-    print("----------------Finished balancing data----------------")
-
-    return X_balanced, y_balanced
-
-    
-
-def split_and_scale(X, y, test_size=0.30, random_state=42):
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
@@ -125,18 +40,95 @@ def split_and_scale(X, y, test_size=0.30, random_state=42):
         stratify=y
     )
 
+    print(f"Train: {len(y_train)} | Test: {len(y_test)}")
+    print("----------------Finished splitting data----------------")
+
+    return X_train, X_test, y_train, y_test
+
+
+# -------------------- CORRELATED FEATURES (TRAIN ONLY) --------------------
+def remove_correlated_features(X_train, X_test, y_train, threshold=0.95, target_name="defects"):
+
+    X_train = X_train.copy()
+    X_test = X_test.copy()
+
+    corr = X_train.corr(numeric_only=True)
+
+    high_corr_pairs = []
+
+    for i in range(len(corr.columns)):
+        for j in range(i + 1, len(corr.columns)):
+
+            r = corr.iloc[i, j]
+
+            if abs(r) > threshold:
+                high_corr_pairs.append((corr.columns[i], corr.columns[j], r))
+
+    print(f"Highly correlated pairs: {len(high_corr_pairs)}")
+
+    temp = X_train.copy()
+    temp[target_name] = y_train
+
+    target_corr = temp.corr(numeric_only=True)[target_name].abs()
+
+    to_drop = set()
+
+    for a, b, _ in high_corr_pairs:
+
+        if target_corr[a] >= target_corr[b]:
+            to_drop.add(b)
+        else:
+            to_drop.add(a)
+
+    X_train = X_train.drop(columns=to_drop)
+    X_test = X_test.drop(columns=to_drop)
+    selected_features = [col for col in X_train.columns]
+
+    print(f"Dropped features: {len(to_drop)}")
+    print(f"Selected features: {len(selected_features)}")
+    print("----------------Finished removing correlated features----------------")
+
+    return X_train, X_test, y_train, list(to_drop), selected_features
+
+
+# -------------------- BALANCE (TRAIN ONLY) --------------------
+def balance_data(X_train, y_train, max_majority_samples=3000, max_minority_samples=2103):
+
+    class_counts = y_train.value_counts()
+
+    majority_class = class_counts.idxmax()
+    minority_class = class_counts.idxmin()
+
+    majority_n = min(int(class_counts.max()), max_majority_samples)
+    minority_n = min(int(class_counts.min()), max_minority_samples)
+
+    print(f"Resampling → majority={majority_n}, minority={minority_n}")
+
+    sampler = NearMiss(
+        version=1,
+        sampling_strategy={
+            majority_class: majority_n,
+            minority_class: minority_n
+        }
+    )
+
+    X_res, y_res = sampler.fit_resample(X_train, y_train)
+
+    print("After balancing:")
+    print(pd.Series(y_res).value_counts())
+    print("----------------Finished balancing data----------------")
+
+    return X_res, y_res
+
+
+# -------------------- SCALE --------------------
+def scale_data(X_train, X_test):
+
     scaler = StandardScaler()
-    X_train = scaler.fit_transform(X_train)
-    X_test = scaler.transform(X_test)
 
-    print(f"Train: {len(y_train)} samples " f"| Test: {len(y_test)} samples")
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
 
-    print("\nTrain class distribution:")
-    print(pd.Series(y_train).value_counts())
+    print("----------------Finished scaling data----------------")
 
-    print("\nTest class distribution:")
-    print(pd.Series(y_test).value_counts())
-
-    print("----------------Finished split and scaling----------------")
-
-    return (X_train, X_test, y_train, y_test,scaler)
+    return X_train_scaled, X_test_scaled, scaler
