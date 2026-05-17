@@ -1,5 +1,10 @@
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+
+
 
 def load_data(path):
     dataset = pd.read_csv(path)
@@ -76,3 +81,64 @@ def remove_correlated_features(dataset, threshold=0.95):
 
     return X_clean, y_clean, list(features_to_drop)
 
+
+def balance_data(
+    X,
+    y,
+    max_majority_samples=3000,
+    max_minority_samples=2103
+):
+    class_counts = y.value_counts()
+
+    minority_n = min(int(class_counts.min()), max_minority_samples )
+    majority_n = min(int(class_counts.max()), max_majority_samples )
+
+    print(
+        f"Resampling targets → "
+        f"majority: {majority_n}, "
+        f"minority: {minority_n}"
+    )
+
+    sampler = NearMiss(
+        version=1,
+        sampling_strategy={
+            0: majority_n,
+            1: minority_n
+        }
+    )
+
+    X_balanced, y_balanced = sampler.fit_resample(X, y)
+
+    print("\nClass distribution after NearMiss:")
+    print(pd.Series(y_balanced).value_counts())
+
+    print("----------------Finished balancing data----------------")
+
+    return X_balanced, y_balanced
+
+    
+
+def split_and_scale(X, y, test_size=0.30, random_state=42):
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        test_size=test_size,
+        random_state=random_state,
+        stratify=y
+    )
+
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
+
+    print(f"Train: {len(y_train)} samples " f"| Test: {len(y_test)} samples")
+
+    print("\nTrain class distribution:")
+    print(pd.Series(y_train).value_counts())
+
+    print("\nTest class distribution:")
+    print(pd.Series(y_test).value_counts())
+
+    print("----------------Finished split and scaling----------------")
+
+    return (X_train, X_test, y_train, y_test,scaler)
