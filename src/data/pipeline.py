@@ -47,7 +47,13 @@ def split_data(dataset, target_col="defects", test_size=0.30, random_state=42):
 
 
 # -------------------- CORRELATED FEATURES (TRAIN ONLY) --------------------
-def remove_correlated_features(X_train, X_test, y_train, threshold=0.95, target_name="defects"):
+def remove_correlated_features(
+    X_train,
+    X_test,
+    y_train,
+    threshold=0.95,
+    target_name="defects"
+):
 
     X_train = X_train.copy()
     X_test = X_test.copy()
@@ -66,7 +72,9 @@ def remove_correlated_features(X_train, X_test, y_train, threshold=0.95, target_
 
     print(f"Highly correlated pairs: {len(high_corr_pairs)}")
 
-    temp = X_train.copy()
+    # align indices safely
+    temp = X_train.copy().reset_index(drop=True)
+    y_train = y_train.reset_index(drop=True)
     temp[target_name] = y_train
 
     target_corr = temp.corr(numeric_only=True)[target_name].abs()
@@ -82,7 +90,8 @@ def remove_correlated_features(X_train, X_test, y_train, threshold=0.95, target_
 
     X_train = X_train.drop(columns=to_drop)
     X_test = X_test.drop(columns=to_drop)
-    selected_features = [col for col in X_train.columns]
+
+    selected_features = list(X_train.columns)
 
     print(f"Dropped features: {len(to_drop)}")
     print(f"Selected features: {len(selected_features)}")
@@ -92,7 +101,12 @@ def remove_correlated_features(X_train, X_test, y_train, threshold=0.95, target_
 
 
 # -------------------- BALANCE (TRAIN ONLY) --------------------
-def balance_data(X_train, y_train, max_majority_samples=3000, max_minority_samples=2103):
+def balance_data(
+    X_train,
+    y_train,
+    max_majority_samples=3000,
+    max_minority_samples=2103
+):
 
     class_counts = y_train.value_counts()
 
@@ -126,8 +140,17 @@ def scale_data(X_train, X_test):
 
     scaler = StandardScaler()
 
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
+    X_train_scaled = pd.DataFrame(
+        scaler.fit_transform(X_train),
+        columns=X_train.columns,
+        index=X_train.index
+    )
+
+    X_test_scaled = pd.DataFrame(
+        scaler.transform(X_test),
+        columns=X_test.columns,
+        index=X_test.index
+    )
 
     print("----------------Finished scaling data----------------")
 
