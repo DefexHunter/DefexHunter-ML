@@ -155,3 +155,19 @@ def scale_data(X_train, X_test):
     print("----------------Finished scaling data----------------")
 
     return X_train_scaled, X_test_scaled, scaler
+
+def build_pipeline(path):
+    data = load_data(path)
+    data = clean_data(data)
+
+    X_train, X_test, y_train, y_test = split_data(data)
+
+    X_train, X_test, y_train, dropped, selected_features = remove_correlated_features(
+        X_train, X_test, y_train
+    )
+
+    X_train, y_train = balance_data(X_train, y_train)
+
+    X_train, X_test, scaler = scale_data(X_train, X_test)
+
+    return X_train, X_test, y_train, y_test, scaler, selected_features, dropped
