@@ -55,3 +55,66 @@ def evaluate_model(name, model, X_tr, y_tr, X_te, y_te):
         "class_1_acc": round(float(cm[1, 1] / cm[1].sum()), 4),
     }
 
+# ── main ──────────────────────────────────────────────────────────────────────
+def train(data_path: str):
+    os.makedirs(MODEL_DIR, exist_ok=True)
+
+    # ── 1. build pipeline ────────────────────────────────
+    print("=" * 55)
+    print("STEP 1 — Running data pipeline")
+    print("=" * 55)
+    pipeline_result = build_pipeline(data_path)
+
+    X_train          = pipeline_result["X_train"]
+    X_test           = pipeline_result["X_test"]
+    y_train          = pipeline_result["y_train"]
+    y_test           = pipeline_result["y_test"]
+    scaler           = pipeline_result["scaler"]
+    selected_features = pipeline_result["selected_features"]
+
+    # ── 2. save scaler + feature list ─────────────────────────────────────────
+    joblib.dump(scaler, os.path.join(MODEL_DIR, "scaler.pkl"))
+    print(f"\nScaler saved → {MODEL_DIR}/scaler.pkl")
+
+    with open(os.path.join(MODEL_DIR, "selected_features.json"), "w") as f:
+        json.dump(selected_features, f)
+    print(f"Features saved → {MODEL_DIR}/selected_features.json")
+    print(f"Features ({len(selected_features)}): {selected_features}")
+
+    # ── 3. train every model with GridSearchCV ────────────────────────────────
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    all_results = []
+
+    for model_name, (estimator, param_grid) in MODEL_REGISTRY.items():
+        print("\n" + "=" * 55)
+        print(f"TRAINING — {model_name.upper()}")
+        print("=" * 55)
+
+        grid = GridSearchCV(
+            estimator,
+            param_grid,
+            scoring="f1_macro",
+            cv=cv,
+            n_jobs=-1,
+            verbose=1,
+        )
+        grid.fit(X_train, y_train)
+        best_model = grid.best_estimator_
+
+        print(f"Best params : {grid.best_params_}")
+        print(f"Best CV F1  : {round(grid.best_score_, 4)}")
+
+        # evaluate 
+        metrics = evaluate_model(
+            model_name, best_model, X_train, y_train, X_test, y_test
+        )
+        all_results.append(metrics)
+
+        print(f"Test accuracy : {metrics['accuracy']}")
+        print(f"Test F1 macro : {metrics['f1_score']}")
+        print(f"ROC-AUC       : {metrics['roc_auc']}")
+
+        # save model
+        out_path = os.path.join(MODEL_DIR, f"{model_name}.pkl")
+        joblib.dump(best_model, out_path)
+        print(f"Saved → {out_path}")
