@@ -132,3 +132,33 @@ def train(data_path: str):
     df = pd.DataFrame(all_results).sort_values("f1_score", ascending=False)
     print(df[["model", "accuracy", "f1_score", "roc_auc", "class_0_acc", "class_1_acc"]].to_string(index=False))
 
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python src/train.py data/jm1_csv.csv")
+        sys.exit(1)
+
+    train(sys.argv[1])
+
+
+
+
+    
+
+"""
+src/train.py
+Trains all 5 models using GridSearchCV, saves artifacts to models/
+
+Usage:
+    python src/train.py data/jm1_csv.csv
+
+Produces:
+    models/decision_tree.pkl
+    models/knn.pkl
+    models/random_forest.pkl
+    models/svm.pkl
+    models/xgboost.pkl
+    models/scaler.pkl
+    models/selected_features.json
+    models/results.json
+"""
