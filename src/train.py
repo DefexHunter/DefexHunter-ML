@@ -118,3 +118,17 @@ def train(data_path: str):
         out_path = os.path.join(MODEL_DIR, f"{model_name}.pkl")
         joblib.dump(best_model, out_path)
         print(f"Saved → {out_path}")
+    
+    # ── 4. save results summary ───────────────────────────────────────────────
+    results_path = os.path.join(MODEL_DIR, "results.json")
+    with open(results_path, "w") as f:
+        json.dump(all_results, f, indent=2)
+    print(f"\nResults saved → {results_path}")
+
+    # ── 5. print final leaderboard ────────────────────────────────────────────
+    print("\n" + "=" * 55)
+    print("FINAL LEADERBOARD (sorted by F1)")
+    print("=" * 55)
+    df = pd.DataFrame(all_results).sort_values("f1_score", ascending=False)
+    print(df[["model", "accuracy", "f1_score", "roc_auc", "class_0_acc", "class_1_acc"]].to_string(index=False))
+
