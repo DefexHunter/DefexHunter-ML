@@ -41,8 +41,12 @@ def evaluate_model(name, model, X_tr, y_tr, X_te, y_te):
         y_te, y_pred, average="macro"
     )
     cm      = confusion_matrix(y_te, y_pred)
-    roc_auc = roc_auc_score(y_te, y_proba)
-
+    try:
+        y_proba = model.predict_proba(X_te)[:, 1]
+        roc_auc = roc_auc_score(y_te, y_proba)
+    except Exception:
+        roc_auc = 0.0
+    
     return {
         "model":       name,
         "accuracy":    round(float(acc),    4),
@@ -51,8 +55,8 @@ def evaluate_model(name, model, X_tr, y_tr, X_te, y_te):
         "recall":      round(float(recall),    4),
         "f1_score":    round(float(f1),        4),
         "roc_auc":     round(float(roc_auc),   4),
-        "class_0_acc": round(float(cm[0, 0] / cm[0].sum()), 4),
-        "class_1_acc": round(float(cm[1, 1] / cm[1].sum()), 4),
+        "class_0_acc": round(float(cm[0, 0] / cm[0].sum()) if cm.shape[0] > 1 and cm[0].sum() != 0 else 0.0, 4),
+        "class_1_acc": round(float(cm[1, 1] / cm[1].sum()) if cm.shape[0] > 1 and cm[1].sum() != 0 else 0.0, 4),
     }
 
 # ── main ──────────────────────────────────────────────────────────────────────
@@ -64,7 +68,6 @@ def train(data_path: str):
     print("STEP 1 — Running data pipeline")
     print("=" * 55)
     pipeline_result = build_pipeline(data_path)
-
     X_train          = pipeline_result["X_train"]
     X_test           = pipeline_result["X_test"]
     y_train          = pipeline_result["y_train"]
@@ -72,12 +75,18 @@ def train(data_path: str):
     scaler           = pipeline_result["scaler"]
     selected_features = pipeline_result["selected_features"]
 
+
+    selected_features = sorted(selected_features)
+
+    X_train = X_train[selected_features]
+    X_test = X_test[selected_features]
+
     # ── 2. save scaler + feature list ─────────────────────────────────────────
     joblib.dump(scaler, os.path.join(MODEL_DIR, "scaler.pkl"))
     print(f"\nScaler saved → {MODEL_DIR}/scaler.pkl")
 
     with open(os.path.join(MODEL_DIR, "selected_features.json"), "w") as f:
-        json.dump(selected_features, f)
+        json.dump(sorted(selected_features), f, indent=2)
     print(f"Features saved → {MODEL_DIR}/selected_features.json")
     print(f"Features ({len(selected_features)}): {selected_features}")
 
@@ -109,6 +118,7 @@ def train(data_path: str):
             model_name, best_model, X_train, y_train, X_test, y_test
         )
         all_results.append(metrics)
+        
 
         print(f"Test accuracy : {metrics['accuracy']}")
         print(f"Test F1 macro : {metrics['f1_score']}")

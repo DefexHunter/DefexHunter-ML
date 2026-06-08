@@ -71,18 +71,17 @@ def predict_batch(body: BatchPredictRequest):
 
 # ── helper ────────────────────────────────────────────────────────────────────
 def _features_to_dict(features) -> dict:
-    """
-    Convert Pydantic CodeFeatures → plain dict with the exact column names
-    the pipeline produced (e.g. 'v(g)' not 'v_g').
-    """
-    alias_map = {
-        "v_g":  "v(g)",
-        "ev_g": "ev(g)",
-        "iv_g": "iv(g)",
-    }
     raw = features.model_dump(by_alias=True)
-    # resolve any remaining snake_case → original column name
-    result = {}
+
+    rename_map = {
+        "locCodeAndComment": "lOCodeAndComment",
+        "v(g)": "v(g)",
+        "ev(g)": "ev(g)",
+        "iv(g)": "iv(g)"
+    }
+
+    normalized = {}
     for k, v in raw.items():
-        result[alias_map.get(k, k)] = v
-    return result
+        normalized[rename_map.get(k, k)] = v
+
+    return normalized

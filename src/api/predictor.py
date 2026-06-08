@@ -72,7 +72,7 @@ def predict(features_dict: dict, model_name: str) -> dict:
 
     # build numpy array in exact column order from training
     try:
-        vec = np.array([[features_dict[col] for col in _selected_features]])
+        vec = np.array([[features_dict.get(col, 0.0) for col in _selected_features]])
     except KeyError as e:
         raise ValueError(f"Missing feature: {e}. Expected: {_selected_features}")
 
