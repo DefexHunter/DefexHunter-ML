@@ -4,47 +4,26 @@ from pydantic import BaseModel, Field
 
 # ── input ─────────────────────────────────────────────────────────────────────
 class CodeFeatures(BaseModel):
-    """
-    One software module's metrics.
-    Field names = selected_features saved by train.py.
-    All values are floats - raw numbers from static analysis tools.
-    """
-    loc:              float = Field(..., description="Lines of code")
-    v_g:              float = Field(..., alias="v(g)",  description="McCabe cyclomatic complexity")
-    ev_g:             float = Field(..., alias="ev(g)", description="McCabe essential complexity")
-    iv_g:             float = Field(..., alias="iv(g)", description="McCabe design complexity")
-    n:                float = Field(..., description="Halstead total N")
-    v:                float = Field(..., description="Halstead volume")
-    l:                float = Field(..., description="Halstead program length")
-    d:                float = Field(..., description="Halstead difficulty")
-    i:                float = Field(..., description="Halstead intelligence")
-    e:                float = Field(..., description="Halstead effort")
-    b:                float = Field(..., description="Halstead error estimate")
-    t:                float = Field(..., description="Halstead time estimate")
-    lOCode:           float = Field(..., description="Lines of code (Halstead)")
-    lOComment:        float = Field(..., description="Lines of comment")
-    lOBlank:          float = Field(..., description="Blank lines")
-    lOCodeAndComment: float = Field(..., description="Lines of code and comment")
-    uniq_Op:          float = Field(..., description="Unique operators")
-    uniq_Opnd:        float = Field(..., description="Unique operands")
-    total_Op:         float = Field(..., description="Total operators")
-    total_Opnd:       float = Field(..., description="Total operands")
-    branchCount:      float = Field(..., description="Branch count")
+    loc: float
+    ev_g: float = Field(..., alias="ev(g)")
+    iv_g: float = Field(..., alias="iv(g)")
+    n: float
+    l: float
+    d: float
+    i: float
+    t: float
+
+    lOCode: float
+    lOComment: float
+    lOBlank: float
+    locCodeAndComment: float
+    uniq_Op: float
+    uniq_Opnd: float
+    branchCount: float
 
     model_config = {
-        "populate_by_name": True,
-        "json_schema_extra": {
-            "example": {
-                "loc": 50, "v(g)": 5, "ev(g)": 3, "iv(g)": 4,
-                "n": 120, "v": 300.5, "l": 0.05, "d": 20.1,
-                "i": 14.9, "e": 6040.5, "b": 0.1, "t": 335.6,
-                "lOCode": 40, "lOComment": 5, "lOBlank": 5,
-                "lOCodeAndComment": 2, "uniq_Op": 15, "uniq_Opnd": 20,
-                "total_Op": 60, "total_Opnd": 60, "branchCount": 10,
-            }
-        },
+        "populate_by_name": True
     }
-
 
 class PredictRequest(BaseModel):
     features: CodeFeatures

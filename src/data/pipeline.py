@@ -100,7 +100,7 @@ def remove_correlated_features(
     X_train = X_train.drop(columns=to_drop)
     X_test = X_test.drop(columns=to_drop)
 
-    selected_features = list(X_train.columns)
+    selected_features = sorted(X_train.columns.tolist())
 
     print(f"Dropped features: {len(to_drop)}")
     print(f"Selected features: {len(selected_features)}")
@@ -135,7 +135,10 @@ def balance_data(
         }
     )
 
-    X_res, y_res = sampler.fit_resample(X_train, y_train)
+    X_res, y_res = sampler.fit_resample(
+    X_train.reset_index(drop=True),
+    y_train.reset_index(drop=True)
+)
 
     print("After balancing:")
     print(pd.Series(y_res).value_counts())
@@ -175,8 +178,13 @@ def build_pipeline(path):
     X_train, X_test, y_train, y_test = split_data(data)
 
     X_train, X_test, y_train, dropped, selected_features = remove_correlated_features(
-        X_train, X_test, y_train
-    )
+    X_train, X_test, y_train
+)
+
+    selected_features = sorted(selected_features)
+
+    X_train = X_train[selected_features]
+    X_test = X_test[selected_features]
 
     X_train, y_train = balance_data(X_train, y_train)
 
