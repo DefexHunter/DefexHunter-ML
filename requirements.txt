@@ -8,3 +8,5 @@ imbalanced-learn
 joblib
 pytest
 httpx
+pydantic
+python-multipart
