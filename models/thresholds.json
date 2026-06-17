@@ -1,0 +1,8 @@
+{
+  "gradient_boosting": 0.3629,
+  "decision_tree": 0.4286,
+  "knn": 1.0,
+  "random_forest": 0.5156,
+  "xgboost": 0.7396,
+  "svm": 0.3886
+}

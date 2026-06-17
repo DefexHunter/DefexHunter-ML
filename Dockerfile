@@ -2,6 +2,16 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# libgomp1 = GNU OpenMP runtime. scikit-learn's tree-based estimators,
+# xgboost, and lightgbm are all compiled against it for parallelism, and
+# unpickling them dlopen()s it at import time. It's an OS-level shared
+# library, not something `pip install` can provide — without it you get
+# "libgomp.so.1: cannot open shared object file" when joblib.load() touches
+# any of those models. Placed before COPY so this layer caches independently
+# of source/model changes.
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
 # install deps first (cached layer)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

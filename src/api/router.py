@@ -43,7 +43,6 @@ def list_models():
 # ── single predict ────────────────────────────────────────────────────────────
 @router.post("/predict", tags=["Prediction"], response_model=PredictResponse)
 def predict_single(request: PredictRequest):
-    # build features dict — handle aliased field names (v(g) etc.)
     features_dict = _features_to_dict(request.features)
 
     try:
@@ -71,17 +70,10 @@ def predict_batch(body: BatchPredictRequest):
 
 # ── helper ────────────────────────────────────────────────────────────────────
 def _features_to_dict(features) -> dict:
-    raw = features.model_dump(by_alias=True)
-
-    rename_map = {
-        "locCodeAndComment": "lOCodeAndComment",
-        "v(g)": "v(g)",
-        "ev(g)": "ev(g)",
-        "iv(g)": "iv(g)"
-    }
-
-    normalized = {}
-    for k, v in raw.items():
-        normalized[rename_map.get(k, k)] = v
-
-    return normalized
+    """
+    Dump by alias so the resulting keys are the exact uppercase training
+    column names (CALL_PAIRS, HALSTEAD_EFFORT, ...) that predictor.predict()
+    looks up in models/selected_features.json. No renaming needed anymore —
+    the aliases on CodeFeatures already match 1:1.
+    """
+    return features.model_dump(by_alias=True)

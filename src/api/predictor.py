@@ -12,6 +12,9 @@ import numpy as np
 
 MODEL_DIR = os.getenv("MODEL_DIR", "models")
 
+# Files in MODEL_DIR that are NOT a model (don't try to joblib.load these as a classifier).
+_NON_MODEL_FILES = {"scaler.pkl"}
+
 # ── loaded once at import time ────────────────────────────────────────────────
 _scaler           = None
 _models: dict     = {}
@@ -19,7 +22,14 @@ _selected_features: list = []
 
 
 def load_artifacts():
-    """Call this once at app startup (lifespan)."""
+    """
+    Call this once at app startup (lifespan).
+
+    Models are discovered by scanning MODEL_DIR for *.pkl files rather than
+    a hardcoded name->filename map. train.py writes one <model_name>.pkl per
+    entry in MODEL_REGISTRY, so this stays correct automatically whether
+    MODEL_REGISTRY has 4 models or 6 (e.g. if lightgbm gets installed later).
+    """
     global _scaler, _models, _selected_features
 
     scaler_path   = os.path.join(MODEL_DIR, "scaler.pkl")
@@ -35,21 +45,22 @@ def load_artifacts():
     with open(features_path) as f:
         _selected_features = json.load(f)
 
-    model_files = {
-        "decision_tree": "decision_tree.pkl",
-        "knn":           "knn.pkl",
-        "random_forest": "random_forest.pkl",
-        "svm":           "svm.pkl",
-        "xgboost":       "xgboost.pkl",
-    }
+    if not os.path.isdir(MODEL_DIR):
+        raise FileNotFoundError(f"Model directory not found: {MODEL_DIR}")
 
-    for name, fname in model_files.items():
+    for fname in sorted(os.listdir(MODEL_DIR)):
+        if not fname.endswith(".pkl") or fname in _NON_MODEL_FILES:
+            continue
+        name = fname[: -len(".pkl")]
         path = os.path.join(MODEL_DIR, fname)
-        if os.path.exists(path):
+        try:
             _models[name] = joblib.load(path)
             print(f"  ✓ loaded {name}")
-        else:
-            print(f"  ✗ missing {path} — skipping")
+        except Exception as e:
+            print(f"  ✗ failed to load {path}: {e}")
+
+    if not _models:
+        print("  ⚠ no model .pkl files found — did train.py run successfully?")
 
     print(f"Predictor ready. Models: {list(_models.keys())}")
 
@@ -60,8 +71,9 @@ def get_loaded_models() -> list:
 
 def predict(features_dict: dict, model_name: str) -> dict:
     """
-    features_dict: raw field values from the Pydantic schema
-    model_name: one of the keys in MODEL_REGISTRY
+    features_dict: raw field values from the Pydantic schema, keyed by the
+                   exact uppercase training column names (e.g. 'CALL_PAIRS').
+    model_name: one of the keys currently in _models (see get_loaded_models())
 
     Returns dict with prediction, label, probability, confidence.
     """
@@ -71,10 +83,7 @@ def predict(features_dict: dict, model_name: str) -> dict:
         )
 
     # build numpy array in exact column order from training
-    try:
-        vec = np.array([[features_dict.get(col, 0.0) for col in _selected_features]])
-    except KeyError as e:
-        raise ValueError(f"Missing feature: {e}. Expected: {_selected_features}")
+    vec = np.array([[features_dict.get(col, 0.0) for col in _selected_features]])
 
     # scale using the fitted scaler
     vec_scaled = _scaler.transform(vec)
