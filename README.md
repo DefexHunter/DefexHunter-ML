@@ -19,6 +19,7 @@ Production-ready ML API for predicting software defects using NASA JM1 dataset.
 ## How to run it locally:
 - 1. First clone the repository: `git clone <repo-url>`
 - 2. Second, navigate into the project folder: `cd DefexHunter-ML`
+- 3. Switch to the branch: `git checkout feature/union-dataset`
 - 3. Install the dependencies: `pip install -r requirements.txt`
 - 4. Place the dataset file (`BalancedPROMISE_union.csv`) inside `src/data/`
 - 5. Add the `.env` file in the project root directory
