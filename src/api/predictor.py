@@ -1,8 +1,3 @@
-"""
-src/api/predictor.py
-Loads all model artifacts once at startup.
-predict() is stateless — safe to call from any number of requests.
-"""
 import json
 import os
 from typing import Optional
@@ -13,37 +8,34 @@ import numpy as np
 MODEL_DIR = os.getenv("MODEL_DIR", "models")
 
 # ── loaded once at import time ────────────────────────────────────────────────
-_scaler           = None
-_models: dict     = {}
+_models: dict = {}
 _selected_features: list = []
+
+MODEL_FILES = {
+    "decision_tree":        "decision_tree.pkl",
+    "knn":                  "knn.pkl",
+    "random_forest":        "random_forest.pkl",
+    "svm":                  "svm.pkl",
+    "xgboost":               "xgboost.pkl",
+    "logistic_regression":  "logistic_regression.pkl",
+    "naive_bayes":          "naive_bayes.pkl",
+}
 
 
 def load_artifacts():
     """Call this once at app startup (lifespan)."""
-    global _scaler, _models, _selected_features
+    global _models, _selected_features
 
-    scaler_path   = os.path.join(MODEL_DIR, "scaler.pkl")
     features_path = os.path.join(MODEL_DIR, "selected_features.json")
-
-    if not os.path.exists(scaler_path):
+    if not os.path.exists(features_path):
         raise FileNotFoundError(
-            f"Scaler not found at {scaler_path}. Run: python src/train.py data/jm1_csv.csv"
+            f"{features_path} not found. Run: python src/train.py data/jm1_csv.csv"
         )
-
-    _scaler = joblib.load(scaler_path)
 
     with open(features_path) as f:
         _selected_features = json.load(f)
 
-    model_files = {
-        "decision_tree": "decision_tree.pkl",
-        "knn":           "knn.pkl",
-        "random_forest": "random_forest.pkl",
-        "svm":           "svm.pkl",
-        "xgboost":       "xgboost.pkl",
-    }
-
-    for name, fname in model_files.items():
+    for name, fname in MODEL_FILES.items():
         path = os.path.join(MODEL_DIR, fname)
         if os.path.exists(path):
             _models[name] = joblib.load(path)
@@ -59,33 +51,25 @@ def get_loaded_models() -> list:
 
 
 def predict(features_dict: dict, model_name: str) -> dict:
-    """
-    features_dict: raw field values from the Pydantic schema
-    model_name: one of the keys in MODEL_REGISTRY
-
-    Returns dict with prediction, label, probability, confidence.
-    """
+  
     if model_name not in _models:
         raise ValueError(
             f"Model '{model_name}' not loaded. Available: {list(_models.keys())}"
         )
 
-    # build numpy array in exact column order from training
     try:
-        vec = np.array([[features_dict.get(col, 0.0) for col in _selected_features]])
+        vec = np.array([[features_dict[col] for col in _selected_features]])
     except KeyError as e:
         raise ValueError(f"Missing feature: {e}. Expected: {_selected_features}")
 
-    # scale using the fitted scaler
-    vec_scaled = _scaler.transform(vec)
+    model = _models[model_name]
 
-    model      = _models[model_name]
-    prediction = int(model.predict(vec_scaled)[0])
+    prediction = int(model.predict(vec)[0])
 
     # probability
     probability: Optional[float] = None
     try:
-        proba       = model.predict_proba(vec_scaled)[0]
+        proba = model.predict_proba(vec)[0]
         probability = round(float(proba[prediction]), 4)
     except AttributeError:
         pass

@@ -2,16 +2,12 @@ import numpy as np
 import pandas as pd
 
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from imblearn.under_sampling import NearMiss
 
 from data.config import (
     TEST_SIZE,
     RANDOM_STATE,
     CORRELATION_THRESHOLD,
     TARGET_COLUMN,
-    MAX_MAJORITY_SAMPLES,
-    MAX_MINORITY_SAMPLES
 )
 
 
@@ -50,6 +46,8 @@ def split_data(dataset, target_col=TARGET_COLUMN):
     )
 
     print(f"Train: {len(y_train)} | Test: {len(y_test)}")
+    print(f"Train class balance:\n{y_train.value_counts(normalize=True)}")
+    print(f"Test class balance:\n{y_test.value_counts(normalize=True)}")
     print("----------------Finished splitting data----------------")
 
     return X_train, X_test, y_train, y_test
@@ -83,8 +81,8 @@ def remove_correlated_features(
 
     # safe alignment
     temp = X_train.copy().reset_index(drop=True)
-    y_train = y_train.reset_index(drop=True)
-    temp[target_name] = y_train
+    y_train_reset = y_train.reset_index(drop=True)
+    temp[target_name] = y_train_reset
 
     target_corr = temp.corr(numeric_only=True)[target_name].abs()
 
@@ -109,66 +107,6 @@ def remove_correlated_features(
     return X_train, X_test, y_train, list(to_drop), selected_features
 
 
-# -------------------- BALANCE (TRAIN ONLY) --------------------
-def balance_data(
-    X_train,
-    y_train,
-    max_majority_samples=MAX_MAJORITY_SAMPLES,
-    max_minority_samples=MAX_MINORITY_SAMPLES
-):
-
-    class_counts = y_train.value_counts()
-
-    majority_class = class_counts.idxmax()
-    minority_class = class_counts.idxmin()
-
-    majority_n = min(int(class_counts.max()), max_majority_samples)
-    minority_n = min(int(class_counts.min()), max_minority_samples)
-
-    print(f"Resampling → majority={majority_n}, minority={minority_n}")
-
-    sampler = NearMiss(
-        version=1,
-        sampling_strategy={
-            majority_class: majority_n,
-            minority_class: minority_n
-        }
-    )
-
-    X_res, y_res = sampler.fit_resample(
-    X_train.reset_index(drop=True),
-    y_train.reset_index(drop=True)
-)
-
-    print("After balancing:")
-    print(pd.Series(y_res).value_counts())
-    print("----------------Finished balancing data----------------")
-
-    return X_res, y_res
-
-
-# -------------------- SCALE --------------------
-def scale_data(X_train, X_test):
-
-    scaler = StandardScaler()
-
-    X_train_scaled = pd.DataFrame(
-        scaler.fit_transform(X_train),
-        columns=X_train.columns,
-        index=X_train.index
-    )
-
-    X_test_scaled = pd.DataFrame(
-        scaler.transform(X_test),
-        columns=X_test.columns,
-        index=X_test.index
-    )
-
-    print("----------------Finished scaling data----------------")
-
-    return X_train_scaled, X_test_scaled, scaler
-
-
 # -------------------- PIPELINE --------------------
 def build_pipeline(path):
 
@@ -178,24 +116,19 @@ def build_pipeline(path):
     X_train, X_test, y_train, y_test = split_data(data)
 
     X_train, X_test, y_train, dropped, selected_features = remove_correlated_features(
-    X_train, X_test, y_train
-)
+        X_train, X_test, y_train
+    )
 
     selected_features = sorted(selected_features)
 
     X_train = X_train[selected_features]
     X_test = X_test[selected_features]
 
-    X_train, y_train = balance_data(X_train, y_train)
-
-    X_train, X_test, scaler = scale_data(X_train, X_test)
-
     return {
         "X_train": X_train,
         "X_test": X_test,
         "y_train": y_train,
         "y_test": y_test,
-        "scaler": scaler,
         "selected_features": selected_features,
-        "dropped_features": dropped
+        "dropped_features": dropped,
     }

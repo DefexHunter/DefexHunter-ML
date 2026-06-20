@@ -28,7 +28,8 @@ class CodeFeatures(BaseModel):
 class PredictRequest(BaseModel):
     features: CodeFeatures
     model: Literal[
-        "decision_tree", "knn", "random_forest", "svm", "xgboost"
+        "decision_tree", "knn", "random_forest", "svm", "xgboost",
+        "logistic_regression", "naive_bayes"
     ] = Field(default="xgboost", description="Which trained model to use")
 
 

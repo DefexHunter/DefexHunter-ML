@@ -1,0 +1,79 @@
+[
+  {
+    "model": "decision_tree",
+    "accuracy": 0.6912,
+    "cv_accuracy": 0.7363,
+    "precision": 0.6061,
+    "recall": 0.6537,
+    "f1_score": 0.6074,
+    "roc_auc": 0.7148,
+    "class_0_acc": 0.7148,
+    "class_1_acc": 0.5927
+  },
+  {
+    "model": "knn",
+    "accuracy": 0.7065,
+    "cv_accuracy": 0.7118,
+    "precision": 0.6037,
+    "recall": 0.6415,
+    "f1_score": 0.609,
+    "roc_auc": 0.6947,
+    "class_0_acc": 0.7474,
+    "class_1_acc": 0.5357
+  },
+  {
+    "model": "random_forest",
+    "accuracy": 0.7923,
+    "cv_accuracy": 0.7973,
+    "precision": 0.6599,
+    "recall": 0.6459,
+    "f1_score": 0.6521,
+    "roc_auc": 0.7568,
+    "class_0_acc": 0.8845,
+    "class_1_acc": 0.4073
+  },
+  {
+    "model": "svm",
+    "accuracy": 0.7705,
+    "cv_accuracy": 0.773,
+    "precision": 0.6362,
+    "recall": 0.6409,
+    "f1_score": 0.6384,
+    "roc_auc": 0.7214,
+    "class_0_acc": 0.8523,
+    "class_1_acc": 0.4295
+  },
+  {
+    "model": "xgboost",
+    "accuracy": 0.7763,
+    "cv_accuracy": 0.7835,
+    "precision": 0.6428,
+    "recall": 0.6445,
+    "f1_score": 0.6436,
+    "roc_auc": 0.7434,
+    "class_0_acc": 0.8595,
+    "class_1_acc": 0.4295
+  },
+  {
+    "model": "logistic_regression",
+    "accuracy": 0.7169,
+    "cv_accuracy": 0.7132,
+    "precision": 0.6215,
+    "recall": 0.6691,
+    "f1_score": 0.6283,
+    "roc_auc": 0.7157,
+    "class_0_acc": 0.7471,
+    "class_1_acc": 0.5911
+  },
+  {
+    "model": "naive_bayes",
+    "accuracy": 0.7996,
+    "cv_accuracy": 0.8049,
+    "precision": 0.6518,
+    "recall": 0.5896,
+    "f1_score": 0.6027,
+    "roc_auc": 0.6965,
+    "class_0_acc": 0.932,
+    "class_1_acc": 0.2472
+  }
+]
