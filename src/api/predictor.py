@@ -4,6 +4,7 @@ from typing import Optional
 
 import joblib
 import numpy as np
+import pandas as pd
 
 MODEL_DIR = os.getenv("MODEL_DIR", "models")
 
@@ -58,7 +59,7 @@ def predict(features_dict: dict, model_name: str) -> dict:
         )
 
     try:
-        vec = np.array([[features_dict[col] for col in _selected_features]])
+        vec = pd.DataFrame([features_dict])[_selected_features]
     except KeyError as e:
         raise ValueError(f"Missing feature: {e}. Expected: {_selected_features}")
 
