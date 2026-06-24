@@ -17,13 +17,13 @@ short_description: Predicts software defects from NASA JM1 static code metrics
 
 ---
 
-## 📌 What is this?
+##  What is this?
 
 DefexHunter predicts whether a software module is **defective or not** based on static code metrics (Halstead complexity, cyclomatic complexity, line counts). It trains 7 ML models on the NASA JM1 dataset and serves predictions via a FastAPI REST API.
 
 ---
 
-## 🚀 Live API
+##  Live API
 
 ```
 Base URL: https://asmaatef-defexhunter.hf.space
@@ -34,7 +34,7 @@ Models:   https://asmaatef-defexhunter.hf.space/models
 
 ---
 
-## 🤖 Models
+##  Models
 
 | Model | Imbalance Strategy |
 |---|---|
@@ -50,7 +50,7 @@ All models are tuned via **GridSearchCV** (5-fold StratifiedKFold, macro F1 scor
 
 ---
 
-## 📊 Pipeline
+##  Pipeline
 
 ```
 Raw CSV → Clean → Stratified Split (70/30) → Feature Selection → StandardScaler → Resampling → GridSearchCV
@@ -58,7 +58,7 @@ Raw CSV → Clean → Stratified Split (70/30) → Feature Selection → Standar
 
 ---
 
-## 📬 Endpoints
+##  Endpoints
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -69,7 +69,7 @@ Raw CSV → Clean → Stratified Split (70/30) → Feature Selection → Standar
 
 ---
 
-## 📬 Example Request
+##  Example Request
 
 `POST /predict`
 
@@ -110,7 +110,7 @@ Example response:
 
 ---
 
-## 📦 Input Features
+##  Input Features
 
 | Feature | Description |
 |---|---|
@@ -132,12 +132,12 @@ Example response:
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 `FastAPI` · `scikit-learn` · `XGBoost` · `imbalanced-learn` · `pandas` · `NumPy` · `Docker` · `Git LFS`
 
 
-## ⚙️ Run Locally
+##  Run Locally
 
 ```bash
 # Train models first
