@@ -1,3 +1,12 @@
+---
+title: DefexHunter
+emoji: 🐛
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+---
+
 # JM1 Software Defect Prediction API
 
 Production-ready ML API for predicting software defects using NASA JM1 dataset.
@@ -16,4 +25,3 @@ Production-ready ML API for predicting software defects using NASA JM1 dataset.
 - Docker support
 - CI/CD ready
 
-## Project Structure
