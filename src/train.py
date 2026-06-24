@@ -34,9 +34,16 @@ def evaluate_model(name, model, X_tr, y_tr, X_te, y_te, cv):
     acc = accuracy_score(y_te, y_pred)
     cv_acc = cross_val_score(model, X_tr, y_tr, cv=cv, scoring="accuracy").mean()
 
+    # macro-averaged (overall) metrics
     precision, recall, f1, _ = precision_recall_fscore_support(
         y_te, y_pred, average="macro"
     )
+
+    # per-class metrics — index 0 = class 0 (no defect), index 1 = class 1 (defect)
+    precision_pc, recall_pc, f1_pc, support_pc = precision_recall_fscore_support(
+        y_te, y_pred, average=None, labels=[0, 1]
+    )
+
     cm = confusion_matrix(y_te, y_pred)
 
     try:
@@ -49,9 +56,24 @@ def evaluate_model(name, model, X_tr, y_tr, X_te, y_te, cv):
         "model":       name,
         "accuracy":    round(float(acc),    4),
         "cv_accuracy": round(float(cv_acc), 4),
+
+        # macro
         "precision":   round(float(precision), 4),
         "recall":      round(float(recall),    4),
         "f1_score":    round(float(f1),        4),
+
+        # per-class — class 0
+        "precision_class_0": round(float(precision_pc[0]), 4),
+        "recall_class_0":    round(float(recall_pc[0]),    4),
+        "f1_class_0":        round(float(f1_pc[0]),         4),
+        "support_class_0":   int(support_pc[0]),
+
+        # per-class — class 1
+        "precision_class_1": round(float(precision_pc[1]), 4),
+        "recall_class_1":    round(float(recall_pc[1]),    4),
+        "f1_class_1":        round(float(f1_pc[1]),         4),
+        "support_class_1":   int(support_pc[1]),
+
         "roc_auc":     round(float(roc_auc),   4),
         "class_0_acc": round(float(cm[0, 0] / cm[0].sum()) if cm.shape[0] > 1 and cm[0].sum() != 0 else 0.0, 4),
         "class_1_acc": round(float(cm[1, 1] / cm[1].sum()) if cm.shape[0] > 1 and cm[1].sum() != 0 else 0.0, 4),
@@ -113,8 +135,8 @@ def train(data_path: str):
         print(f"Test accuracy : {metrics['accuracy']}")
         print(f"Test F1 macro : {metrics['f1_score']}")
         print(f"ROC-AUC       : {metrics['roc_auc']}")
-        print(f"Class 0 acc   : {metrics['class_0_acc']}")
-        print(f"Class 1 acc   : {metrics['class_1_acc']}")
+        print(f"Class 0 — precision: {metrics['precision_class_0']}  recall: {metrics['recall_class_0']}  f1: {metrics['f1_class_0']}  (n={metrics['support_class_0']})")
+        print(f"Class 1 — precision: {metrics['precision_class_1']}  recall: {metrics['recall_class_1']}  f1: {metrics['f1_class_1']}  (n={metrics['support_class_1']})")
 
         # save full pipeline (scaler + resampler + classifier all in one)
         out_path = os.path.join(MODEL_DIR, f"{model_name}.pkl")
@@ -132,7 +154,11 @@ def train(data_path: str):
     print("FINAL LEADERBOARD (sorted by F1)")
     print("=" * 55)
     df = pd.DataFrame(all_results).sort_values("f1_score", ascending=False)
-    print(df[["model", "accuracy", "f1_score", "roc_auc", "class_0_acc", "class_1_acc"]].to_string(index=False))
+    print(df[[
+        "model", "accuracy", "f1_score", "roc_auc",
+        "precision_class_0", "recall_class_0", "f1_class_0",
+        "precision_class_1", "recall_class_1", "f1_class_1",
+    ]].to_string(index=False))
 
 
 if __name__ == "__main__":
