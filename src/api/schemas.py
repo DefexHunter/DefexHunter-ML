@@ -30,7 +30,7 @@ class PredictRequest(BaseModel):
     model: Literal[
         "decision_tree", "knn", "random_forest", "svm", "xgboost",
         "logistic_regression", "naive_bayes"
-    ] = Field(default="xgboost", description="Which trained model to use")
+    ] = Field(default="random_forest", description="Which trained model to use")
 
 
 # ── output ────────────────────────────────────────────────────────────────────

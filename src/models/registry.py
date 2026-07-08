@@ -24,14 +24,13 @@ def _pipe(clf):
     return ImbPipeline(
         steps=[
             ("scaler", StandardScaler()),
-            ("resampler", "passthrough"),  # overridden by grid below
+            ("resampler", "passthrough"), 
             ("clf", clf),
         ]
     )
 
 
-# ── RF gets its own pipeline shape: separate over/under steps so they can
-#    be combined in the same run instead of being mutually exclusive ───────
+
 def _pipe_combo(clf):
     return ImbPipeline(
         steps=[
@@ -44,7 +43,7 @@ def _pipe_combo(clf):
 
 
 _RF_PARAM_GRID = [
-    # 1) no resampling at all — class_weight only, as a baseline to beat
+    # 1) no resampling at all 
     {
         "over":  ["passthrough"],
         "under": ["passthrough"],
